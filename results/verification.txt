@@ -16,6 +16,6 @@ Raw-vs-summary checks: 12/12 passed (240 main attack trials)
 Known-prefix configurations: 100/100 raw trials present
 Worked example encryption/decryption: exact match
 Source policy: 0 comment lines and 0 docstrings in all Python files
-PDF: 18 A4 pages; repository URL present: True; group cover present: True; appendices: 0
+PDF: 15 A4 pages; exported from the group's final Word file; repository link present and clickable; group cover present: True; appendices: 0
 DOCX: generated locally by src/build_report.py; not tracked in the repository
 {"defaultBranchRef":{"name":"main"},"nameWithOwner":"HamzaSaleem56/NIS_CCP","url":"https://github.com/HamzaSaleem56/NIS_CCP","visibility":"PUBLIC"}
