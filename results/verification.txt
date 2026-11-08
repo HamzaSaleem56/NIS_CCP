@@ -1,0 +1,21 @@
+test_custom_cipher_round_trips (test_cipher.CipherTests.test_custom_cipher_round_trips) ... ok
+test_frequency_attack_recovers_long_message (test_cipher.CipherTests.test_frequency_attack_recovers_long_message) ... ok
+test_key_validation_and_rail_derivation (test_cipher.CipherTests.test_key_validation_and_rail_derivation) ... ok
+test_known_prefix_recovers_full_message (test_cipher.CipherTests.test_known_prefix_recovers_full_message) ... ok
+test_normalization (test_cipher.CipherTests.test_normalization) ... ok
+test_rail_fence_round_trips (test_cipher.CipherTests.test_rail_fence_round_trips) ... ok
+test_shift_baseline (test_cipher.CipherTests.test_shift_baseline) ... ok
+test_standard_vigenere_vector (test_cipher.CipherTests.test_standard_vigenere_vector) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.945s
+
+OK
+Raw-vs-summary checks: 12/12 passed (240 main attack trials)
+Known-prefix configurations: 80/80 raw trials present
+Worked example encryption/decryption: exact match
+Source policy: zero comment tokens and zero docstrings in all Python files
+PDF: 16 A4 pages; repository URL and dynamic benchmark values verified
+DOCX: valid package, 13 tables, 5 figures
+Required submission and group-sharing files: present
+{"defaultBranchRef":{"name":"main"},"nameWithOwner":"Global-Tech-hub/ccp-nis-fall-2026-vrfc","url":"https://github.com/Global-Tech-hub/ccp-nis-fall-2026-vrfc","visibility":"PRIVATE"}
