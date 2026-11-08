@@ -4,8 +4,9 @@
 **Assessment:** Complex Computing Problem, CLO3, Fall 2026  
 **Group members:** Hamza Saleem (CR-23009), M Imaad Tahir (CR-23014), Mesum Raza (CR-23032), Waleed Kashif (CR-23040), Owais Khan (CR-23301)  
 **Submitted to:** Prof. Dr. Shariq Mahmood Khan, Department of CS & IT, NED University of Engineering & Technology  
-**GitHub:** https://github.com/HamzaSaleem56/NIS_CCP (public)
-**Try it online:** https://hamzasaleem56.github.io/NIS_CCP/ (no install needed)
+**GitHub:** https://github.com/HamzaSaleem56/NIS_CCP (public)  
+**Try it online:** https://hamzasaleem56.github.io/NIS_CCP/ (no install needed)  
+**License:** [MIT](LICENSE)
 
 VHC (Vigenère–Hill Cascade) is a two-stage classical cipher built from two ciphers covered in the course (Vigenère and Hill), with a complete Python implementation and two cryptanalysis methods. It is an educational project, not production cryptography.
 
@@ -27,6 +28,47 @@ Stage I:     OVCITHZYEAPZTRPNTHYZXET
 Ciphertext:  GVAGHADTCSTYJGBWHAETLLT
 Decrypted:   MEETATTHELIBRARYATSIXPM
 ```
+
+## How the cipher works, step by step
+
+These screenshots come from the **VHC cipher lab**, the project's browser version (see [Try it in your browser](#try-it-in-your-browser)). They follow the worked example above.
+
+### 1. Choose a message and two keys
+
+VHC uses two independent secrets: a **Vigenère keyword** of at least 10 letters and a **4-letter Hill key**. Only the letters A–Z are encrypted; spaces and punctuation are dropped. The page checks both keys as you type: the keyword must be long enough, and the Hill key must give a matrix that can be undone (its determinant must be odd and not 13).
+
+![Encrypt tab: message, Vigenère keyword CRYPTOGRAPHY, Hill key HILL and the ciphertext GVAGHADTCSTYJGBWHAETLLT](docs/screenshots/encrypt.png)
+
+### 2. Stage I: Vigenère shifts every letter
+
+Each letter moves forward by the matching keyword letter (A = 0, B = 1, … Z = 25), and the keyword repeats along the message. On its own this is a classic polyalphabetic cipher, so the same letter can turn into different letters at different positions.
+
+![Stage I table: message letters, the repeated keyword CRYPTOGRAPHY, and the shifted letters](docs/screenshots/stage-1-vigenere.png)
+
+### 3. Stage II: Hill mixes the letters in pairs
+
+The Stage I output is split into pairs. Each pair becomes a column of two numbers and is multiplied by the 2×2 key matrix, mod 26. For the key `HILL` the matrix is [[7, 8], [11, 11]], so the first pair `OV` = (14, 21) becomes (266, 385) → (6, 21) = `GV`. Every ciphertext letter now depends on **two** plaintext letters and **two** keyword letters. If the message has an odd number of letters, the last one (here `T`) skips this stage.
+
+![Stage II: the pair OV multiplied by the HILL matrix, giving GV](docs/screenshots/stage-2-hill.png)
+
+Decryption runs the same steps backwards: multiply each pair by the inverse matrix H⁻¹, then shift each letter back by the keyword.
+
+### 4. Pick a valid Hill key
+
+Many 4-letter words don't work as Hill keys, because their matrix can't be inverted mod 26. The **Hill keys** tab shows the matrix, its determinant, why a key works or fails, and the inverse matrix used for decryption.
+
+![Hill keys tab: HILL works, with its matrix, determinant 15 and inverse matrix](docs/screenshots/hill-keys.png)
+
+### 5. Break it
+
+Because both stages are linear, together they act like one Hill cipher plus an offset that repeats with the keyword. The **Break it** tab makes a secret message with hidden random keys and runs both attacks from the report:
+
+- **Frequency attack (ciphertext only):** finds each row of the inverse Hill matrix by how English-like the resulting letters look, then each Vigenère shift by comparing letter counts with normal English.
+- **Known-plaintext attack:** if the attacker knows how the message starts, subtracting pairs in the same key position cancels the keyword, and a little matrix algebra gives both keys.
+
+![Break it tab: both attacks recover the whole 1,600-letter message and both keys](docs/screenshots/break-it.png)
+
+In the project's experiment (20 trials per length), the frequency attack recovered every message of 800 letters or more, and 32 known letters were enough to recover every message. The full analysis is in the [report](report/CCP_NIS_Fall_2026_Report.pdf).
 
 ## Try it in your browser
 
@@ -135,8 +177,14 @@ data/                Training/evaluation corpora and attribution
 results/             Raw CSVs, aggregate results, metadata, charts
 report/              Final PDF, report source, and cover logo
 docs/                Browser version (VHC cipher lab) for GitHub Pages
+docs/screenshots/    Screenshots used in this README
+LICENSE              MIT License
 ```
 
 ## Security notice
 
 The Hill stage is linear, so the cascade keeps the Vigenère period; rows of the inverse Hill matrix can be found one at a time; identical plaintext pairs in the same key position give identical ciphertext pairs; and a short known prefix reveals both keys. Length validation does not guarantee entropy: repetitive keywords such as `AAAAAAAAAA` are weak despite satisfying the minimum length. Do not use VHC for real sensitive data. Use a maintained authenticated-encryption library for production systems.
+
+## License
+
+This project is released under the [MIT License](LICENSE). Copyright (c) 2026 Hamza Saleem, M Imaad Tahir, Mesum Raza, Waleed Kashif, Owais Khan.
