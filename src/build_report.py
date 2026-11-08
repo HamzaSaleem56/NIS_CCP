@@ -25,18 +25,22 @@ def markdown_table(headers: list[str], rows: list[list[str]]) -> str:
 def replacements() -> dict[str, str]:
     summary = read_csv('attack_summary.csv')
     frequency = [r for r in summary if r['attack'] == 'frequency']
-    known = [r for r in summary if r['attack'] == 'known-prefix-24']
+    known = [r for r in summary if r['attack'].startswith('known-prefix-')]
     freq_table = markdown_table(['Length', 'Exact recovery', '95% Wilson interval', 'Mean letter accuracy', 'Median time'], [[r['ciphertext_length'], f'{r['exact_successes']}/{r['trials']} ({float(r['exact_success_pct']):g}%)', f'{float(r['wilson_95_low_pct']):g}%–{float(r['wilson_95_high_pct']):g}%', f'{float(r['mean_letter_accuracy_pct']):g}%', f'{float(r['median_elapsed_ms']):g} ms'] for r in frequency])
-    known_table = markdown_table(['Ciphertext length', 'Known prefix', 'Exact recovery', 'Mean candidates', 'Median time'], [[r['ciphertext_length'], '24', f'{r['exact_successes']}/{r['trials']} ({float(r['exact_success_pct']):g}%)', f'{float(r['mean_candidates']):g}', f'{float(r['median_elapsed_ms']):g} ms'] for r in known])
+    known_table = markdown_table(['Ciphertext length', 'Known prefix', 'Exact recovery', 'Mean candidates', 'Median time'], [[r['ciphertext_length'], r['attack'].rsplit('-', 1)[1], f'{r['exact_successes']}/{r['trials']} ({float(r['exact_success_pct']):g}%)', f'{float(r['mean_candidates']):g}', f'{float(r['median_elapsed_ms']):g} ms'] for r in known])
     prefix_rows = read_csv('known_prefix_lengths.csv')
     prefix_table_rows = []
-    for length in (12, 24, 48, 96):
+    for length in sorted({int(r['known_prefix_length']) for r in prefix_rows}):
         group = [r for r in prefix_rows if int(r['known_prefix_length']) == length]
         successes = sum((int(r['exact_recovery']) for r in group))
-        prefix_table_rows.append([str(length), str(len(group)), f'{successes}/{len(group)} ({100 * successes / len(group):g}%)', f'{statistics.mean((int(r['evaluated_candidates']) for r in group)):g}', f'{statistics.median((float(r['elapsed_ms']) for r in group)):g} ms'])
-    prefix_table = markdown_table(['Known prefix m', 'Trials', 'Exact recovery', 'Mean candidates', 'Median time'], prefix_table_rows)
+        by_key = []
+        for key_length in sorted({int(r['key_length']) for r in group}):
+            subgroup = [r for r in group if int(r['key_length']) == key_length]
+            by_key.append(f'L={key_length}: {sum((int(r['exact_recovery']) for r in subgroup))}/{len(subgroup)}')
+        prefix_table_rows.append([str(length), f'{successes}/{len(group)} ({100 * successes / len(group):g}%)', ', '.join(by_key), f'{statistics.mean((int(r['evaluated_candidates']) for r in group)):g}', f'{statistics.median((float(r['elapsed_ms']) for r in group)):g} ms'])
+    prefix_table = markdown_table(['Known prefix m', 'Exact recovery', 'By keyword length', 'Mean candidates', 'Median time'], prefix_table_rows)
     performance = read_csv('performance.csv')
-    operations = ('shift_encrypt', 'vigenere_encrypt', 'vrf_encrypt', 'vrf_decrypt')
+    operations = ('shift_encrypt', 'vigenere_encrypt', 'hill_encrypt', 'vhc_encrypt', 'vhc_decrypt')
     perf_rows = []
     for length in (1000, 10000, 100000, 1000000):
         row = [f'{length:,}']
@@ -44,9 +48,9 @@ def replacements() -> dict[str, str]:
             match = next((r for r in performance if r['operation'] == operation and int(r['input_length']) == length))
             row.append(f'{float(match['median_ms']):g}')
         perf_rows.append(row)
-    perf_table = markdown_table(['Characters', 'Shift enc. (ms)', 'Vigenère enc. (ms)', 'VRFC enc. (ms)', 'VRFC dec. (ms)'], perf_rows)
+    perf_table = markdown_table(['Characters', 'Shift enc. (ms)', 'Vigenère enc. (ms)', 'Hill enc. (ms)', 'VHC enc. (ms)', 'VHC dec. (ms)'], perf_rows)
     metrics = {r['operation']: float(r['median_ms']) for r in performance if int(r['input_length']) == 1000000}
-    performance_analysis = f'At one million characters, VRFC encryption took {metrics['vrf_encrypt']:.2f} ms versus {metrics['shift_encrypt']:.2f} ms for Shift encryption (approximately {metrics['vrf_encrypt'] / metrics['shift_encrypt']:.2f}×), while VRFC decryption took {metrics['vrf_decrypt']:.2f} ms versus {metrics['shift_decrypt']:.2f} ms for Shift decryption (approximately {metrics['vrf_decrypt'] / metrics['shift_decrypt']:.2f}×).'
+    performance_analysis = f'At one million characters, VHC encryption took {metrics['vhc_encrypt']:.2f} ms versus {metrics['shift_encrypt']:.2f} ms for Shift encryption (approximately {metrics['vhc_encrypt'] / metrics['shift_encrypt']:.2f}×), while VHC decryption took {metrics['vhc_decrypt']:.2f} ms versus {metrics['shift_decrypt']:.2f} ms for Shift decryption (approximately {metrics['vhc_decrypt'] / metrics['shift_decrypt']:.2f}×).'
     return {'FREQUENCY_TABLE': freq_table, 'KNOWN_TABLE': known_table, 'PREFIX_TABLE': prefix_table, 'PERFORMANCE_TABLE': perf_table, 'PERFORMANCE_ANALYSIS': performance_analysis}
 
 def expanded_markdown() -> str:
@@ -140,7 +144,7 @@ def build_pdf(text: str) -> None:
     font_dir = Path('/usr/share/fonts/truetype/dejavu')
     pdfmetrics.registerFont(TTFont('DejaVu', str(font_dir / 'DejaVuSans.ttf')))
     pdfmetrics.registerFont(TTFont('DejaVuBold', str(font_dir / 'DejaVuSans-Bold.ttf')))
-    pdfmetrics.registerFont(TTFont('DejaVuItalic', '/usr/share/fonts/truetype/liberation/LiberationSans-Italic.ttf'))
+    pdfmetrics.registerFont(TTFont('DejaVuItalic', str(font_dir / 'DejaVuSans-Oblique.ttf')))
     pdfmetrics.registerFont(TTFont('DejaVuMono', str(font_dir / 'DejaVuSansMono.ttf')))
     pdfmetrics.registerFontFamily('DejaVu', normal='DejaVu', bold='DejaVuBold', italic='DejaVuItalic')
     navy = colors.HexColor('#172554')
@@ -185,17 +189,17 @@ def build_pdf(text: str) -> None:
         canvas.setFont('DejaVu', 7.2)
         canvas.setFillColor(slate)
         canvas.drawString(doc.leftMargin, A4[1] - 12.5 * mm, 'CT-486 · Complex Computing Problem')
-        canvas.drawRightString(A4[0] - doc.rightMargin, A4[1] - 12.5 * mm, 'VRFC · Fall 2026')
+        canvas.drawRightString(A4[0] - doc.rightMargin, A4[1] - 12.5 * mm, 'VHC · Fall 2026')
         canvas.line(doc.leftMargin, 13 * mm, A4[0] - doc.rightMargin, 13 * mm)
         canvas.drawString(doc.leftMargin, 9.5 * mm, f'{AUTHOR} · {REGISTRATION}')
         canvas.drawRightString(A4[0] - doc.rightMargin, 9.5 * mm, f'Page {doc.page}')
         canvas.restoreState()
-    doc = ReportDoc(str(PDF_OUT), pagesize=A4, leftMargin=18 * mm, rightMargin=18 * mm, topMargin=21 * mm, bottomMargin=18 * mm, title='Design and Break a Custom Cipher — VRFC', author=AUTHOR, subject='Network and Information Security (CT-486), CCP Fall 2026')
+    doc = ReportDoc(str(PDF_OUT), pagesize=A4, leftMargin=18 * mm, rightMargin=18 * mm, topMargin=21 * mm, bottomMargin=18 * mm, title='Design and Break a Custom Cipher — VHC', author=AUTHOR, subject='Network and Information Security (CT-486), CCP Fall 2026')
     story = []
     story.append(Spacer(1, 24 * mm))
     story.append(Paragraph('NETWORK AND INFORMATION SECURITY · CT-486', ParagraphStyle('CoverCourse', parent=body, fontName='DejaVuBold', fontSize=10, textColor=cyan, alignment=TA_CENTER, spaceAfter=12)))
     story.append(Paragraph('Design and Break<br/>a Custom Cipher', ParagraphStyle('CoverTitle', parent=body, fontName='DejaVuBold', fontSize=28, leading=35, textColor=navy, alignment=TA_CENTER, spaceAfter=12)))
-    story.append(Paragraph('Vigenère–Rail-Fence Cascade (VRFC)', ParagraphStyle('CoverSubtitle', parent=body, fontName='DejaVu', fontSize=14, leading=19, textColor=purple, alignment=TA_CENTER, spaceAfter=18)))
+    story.append(Paragraph('Vigenère–Hill Cascade (VHC)', ParagraphStyle('CoverSubtitle', parent=body, fontName='DejaVu', fontSize=14, leading=19, textColor=purple, alignment=TA_CENTER, spaceAfter=18)))
     badge = Table([[Paragraph('TWO CLASSICAL STAGES', table_head), Paragraph('DUAL ATTACK SIMULATION', table_head), Paragraph('MEASURED RESULTS', table_head)]], colWidths=[doc.width / 3] * 3)
     badge.setStyle(TableStyle([('BACKGROUND', (0, 0), (0, 0), purple), ('BACKGROUND', (1, 0), (1, 0), cyan), ('BACKGROUND', (2, 0), (2, 0), navy), ('ALIGN', (0, 0), (-1, -1), 'CENTER'), ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'), ('TOPPADDING', (0, 0), (-1, -1), 9), ('BOTTOMPADDING', (0, 0), (-1, -1), 9)]))
     story.append(badge)
@@ -315,7 +319,7 @@ def build_docx(text: str) -> None:
         styles[name].paragraph_format.space_before = Pt(12)
         styles[name].paragraph_format.space_after = Pt(6)
     header = section.header.paragraphs[0]
-    header.text = 'CT-486 · Complex Computing Problem                                      VRFC · Fall 2026'
+    header.text = 'CT-486 · Complex Computing Problem                                      VHC · Fall 2026'
     header.style = styles['Caption']
     footer = section.footer.paragraphs[0]
     footer.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -323,14 +327,14 @@ def build_docx(text: str) -> None:
     field = OxmlElement('w:fldSimple')
     field.set(qn('w:instr'), 'PAGE')
     footer._p.append(field)
-    document.core_properties.title = 'Design and Break a Custom Cipher — VRFC'
+    document.core_properties.title = 'Design and Break a Custom Cipher — VHC'
     document.core_properties.author = AUTHOR
     document.core_properties.subject = 'Network and Information Security (CT-486), CCP Fall 2026'
     document.add_paragraph('NETWORK AND INFORMATION SECURITY · CT-486', style='Subtitle').alignment = WD_ALIGN_PARAGRAPH.CENTER
     document.add_paragraph('')
     title = document.add_paragraph('Design and Break\na Custom Cipher', style='Title')
     title.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    subtitle = document.add_paragraph('Vigenère–Rail-Fence Cascade (VRFC)')
+    subtitle = document.add_paragraph('Vigenère–Hill Cascade (VHC)')
     subtitle.alignment = WD_ALIGN_PARAGRAPH.CENTER
     subtitle.runs[0].font.size = Pt(16)
     subtitle.runs[0].font.color.rgb = RGBColor(109, 40, 217)

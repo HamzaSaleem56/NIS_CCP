@@ -7,10 +7,12 @@ import statistics
 import time
 from pathlib import Path
 from attack import QuadgramModel, frequency_attack, known_plaintext_attack
-from cipher import decrypt, derive_rails, encrypt, shift_decrypt, shift_encrypt, vigenere_encrypt, rail_fence_encrypt
+from cipher import decrypt, encrypt, hill_encrypt, hill_matrix, shift_decrypt, shift_encrypt, vigenere_encrypt
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / 'results'
-KEYS = ('CRYPTOGRAPHY', 'KERCKHOFFS', 'SUBSTITUTION', 'INFORMATION', 'CLASSICALX', 'TRANSPOSED', 'FREQUENCYX', 'CIPHERATTACK', 'NETWORKSEC', 'POLYALPHABET')
+KEYS = (('CRYPTOGRAPHY', 'HILL'), ('KERCKHOFFS', 'JUMP'), ('SUBSTITUTION', 'RUSH'), ('INFORMATION', 'LAMB'), ('CLASSICALX', 'BOLT'), ('TRANSPOSED', 'FERN'), ('FREQUENCYX', 'REEF'), ('CIPHERATTACK', 'VOLT'), ('NETWORKSEC', 'HYMN'), ('POLYALPHABET', 'JOLT'))
+KNOWN_PREFIX = 32
+PREFIX_LENGTHS = (16, 24, 32, 48, 96)
 LENGTHS = (100, 200, 400, 800, 1600, 3200)
 
 def write_csv(path: Path, rows: list[dict]) -> None:
@@ -51,29 +53,29 @@ def run_attack_experiments(corpus: str, model: QuadgramModel, trials: int, seed:
         for trial in range(trials):
             rng = random.Random(seed + length * 1000 + trial)
             plaintext = sample_plaintext(corpus, length, rng)
-            key = KEYS[trial % len(KEYS)]
-            ciphertext = encrypt(plaintext, key)
+            key, hill_key = KEYS[trial % len(KEYS)]
+            ciphertext = encrypt(plaintext, key, hill_key)
             result = frequency_attack(ciphertext, model)
             matches = sum((a == b for a, b in zip(result.plaintext, plaintext)))
-            frequency_rows.append({'ciphertext_length': length, 'trial': trial, 'actual_key': key, 'actual_rails': derive_rails(key), 'recovered_key': result.key, 'recovered_rails': result.rails, 'exact_recovery': int(result.plaintext == plaintext), 'key_recovery': int(result.key == key), 'rail_recovery': int(result.rails == derive_rails(key)), 'letter_accuracy_pct': round(100 * matches / length, 2), 'language_score': round(result.score, 6), 'evaluated_candidates': result.evaluated_candidates, 'elapsed_ms': round(result.elapsed_ms, 3)})
-            known = known_plaintext_attack(plaintext[:24], ciphertext, model)
+            frequency_rows.append({'ciphertext_length': length, 'trial': trial, 'actual_key': key, 'actual_hill_key': hill_key, 'recovered_key': result.key, 'recovered_hill_key': result.hill_key, 'exact_recovery': int(result.plaintext == plaintext), 'key_recovery': int(result.key == key), 'hill_key_recovery': int(result.hill_key == hill_key), 'letter_accuracy_pct': round(100 * matches / length, 2), 'language_score': round(result.score, 6), 'evaluated_candidates': result.evaluated_candidates, 'elapsed_ms': round(result.elapsed_ms, 3)})
+            known = known_plaintext_attack(plaintext[:KNOWN_PREFIX], ciphertext, model)
             known_matches = sum((a == b for a, b in zip(known.plaintext, plaintext)))
-            known_rows.append({'ciphertext_length': length, 'known_prefix_length': 24, 'trial': trial, 'actual_key': key, 'actual_rails': derive_rails(key), 'recovered_key': known.key, 'recovered_rails': known.rails, 'exact_recovery': int(known.plaintext == plaintext), 'key_recovery': int(known.key == key), 'rail_recovery': int(known.rails == derive_rails(key)), 'letter_accuracy_pct': round(100 * known_matches / length, 2), 'language_score': round(known.score, 6), 'evaluated_candidates': known.evaluated_candidates, 'elapsed_ms': round(known.elapsed_ms, 3)})
+            known_rows.append({'ciphertext_length': length, 'known_prefix_length': KNOWN_PREFIX, 'trial': trial, 'actual_key': key, 'actual_hill_key': hill_key, 'recovered_key': known.key, 'recovered_hill_key': known.hill_key, 'exact_recovery': int(known.plaintext == plaintext), 'key_recovery': int(known.key == key), 'hill_key_recovery': int(known.hill_key == hill_key), 'letter_accuracy_pct': round(100 * known_matches / length, 2), 'language_score': round(known.score, 6), 'evaluated_candidates': known.evaluated_candidates, 'elapsed_ms': round(known.elapsed_ms, 3)})
         print(f'attacks: length={length}, trials={trials} complete', flush=True)
-    summary = summarize_attack_rows(frequency_rows, 'frequency') + summarize_attack_rows(known_rows, 'known-prefix-24')
+    summary = summarize_attack_rows(frequency_rows, 'frequency') + summarize_attack_rows(known_rows, f'known-prefix-{KNOWN_PREFIX}')
     return (frequency_rows, known_rows, summary)
 
 def run_prefix_experiment(corpus: str, model: QuadgramModel, trials: int, seed: int) -> list[dict]:
     rows = []
     message_length = 1600
-    for prefix_length in (12, 24, 48, 96):
+    for prefix_length in PREFIX_LENGTHS:
         for trial in range(trials):
             rng = random.Random(seed + 900000 + prefix_length * 100 + trial)
             plaintext = sample_plaintext(corpus, message_length, rng)
-            key = KEYS[trial % len(KEYS)]
-            ciphertext = encrypt(plaintext, key)
+            key, hill_key = KEYS[trial % len(KEYS)]
+            ciphertext = encrypt(plaintext, key, hill_key)
             result = known_plaintext_attack(plaintext[:prefix_length], ciphertext, model)
-            rows.append({'ciphertext_length': message_length, 'known_prefix_length': prefix_length, 'trial': trial, 'exact_recovery': int(result.plaintext == plaintext), 'key_recovery': int(result.key == key), 'evaluated_candidates': result.evaluated_candidates, 'elapsed_ms': round(result.elapsed_ms, 3)})
+            rows.append({'ciphertext_length': message_length, 'known_prefix_length': prefix_length, 'trial': trial, 'key_length': len(key), 'exact_recovery': int(result.plaintext == plaintext), 'key_recovery': int(result.key == key), 'evaluated_candidates': result.evaluated_candidates, 'elapsed_ms': round(result.elapsed_ms, 3)})
     return rows
 
 def measure(function, repeats: int) -> list[float]:
@@ -86,13 +88,13 @@ def measure(function, repeats: int) -> list[float]:
 
 def run_benchmarks(corpus: str) -> list[dict]:
     rows = []
-    key = 'CRYPTOGRAPHY'
+    key, hill_key = KEYS[0]
     for length in (1000, 10000, 100000, 1000000):
         plaintext = (corpus * (length // len(corpus) + 1))[:length]
-        ciphertext = encrypt(plaintext, key)
+        ciphertext = encrypt(plaintext, key, hill_key)
         shift_ciphertext = shift_encrypt(plaintext, 3)
         repeats = 21 if length <= 100000 else 7
-        operations = {'shift_encrypt': lambda: shift_encrypt(plaintext, 3), 'shift_decrypt': lambda: shift_decrypt(shift_ciphertext, 3), 'vigenere_encrypt': lambda: vigenere_encrypt(plaintext, key), 'vrf_encrypt': lambda: encrypt(plaintext, key), 'vrf_decrypt': lambda: decrypt(ciphertext, key)}
+        operations = {'shift_encrypt': lambda: shift_encrypt(plaintext, 3), 'shift_decrypt': lambda: shift_decrypt(shift_ciphertext, 3), 'vigenere_encrypt': lambda: vigenere_encrypt(plaintext, key), 'hill_encrypt': lambda: hill_encrypt(plaintext, hill_key), 'vhc_encrypt': lambda: encrypt(plaintext, key, hill_key), 'vhc_decrypt': lambda: decrypt(ciphertext, key, hill_key)}
         for operation, function in operations.items():
             samples = measure(function, repeats)
             median_ms = statistics.median(samples)
@@ -105,9 +107,9 @@ def make_charts(attack_summary: list[dict], benchmarks: list[dict]) -> None:
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
     plt.style.use('seaborn-v0_8-whitegrid')
-    colors = {'frequency': '#7c3aed', 'known-prefix-24': '#0891b2'}
+    colors = {'frequency': '#7c3aed', f'known-prefix-{KNOWN_PREFIX}': '#0891b2'}
     fig, ax = plt.subplots(figsize=(8.2, 4.6))
-    for attack in ('frequency', 'known-prefix-24'):
+    for attack in ('frequency', f'known-prefix-{KNOWN_PREFIX}'):
         rows = [row for row in attack_summary if row['attack'] == attack]
         ax.plot([r['ciphertext_length'] for r in rows], [r['exact_success_pct'] for r in rows], marker='o', linewidth=2.2, label=attack, color=colors[attack])
     ax.set_xscale('log', base=2)
@@ -121,7 +123,7 @@ def make_charts(attack_summary: list[dict], benchmarks: list[dict]) -> None:
     fig.savefig(RESULTS / 'attack_success.png', dpi=180)
     plt.close(fig)
     fig, ax = plt.subplots(figsize=(8.2, 4.6))
-    for attack in ('frequency', 'known-prefix-24'):
+    for attack in ('frequency', f'known-prefix-{KNOWN_PREFIX}'):
         rows = [row for row in attack_summary if row['attack'] == attack]
         ax.plot([r['ciphertext_length'] for r in rows], [r['median_elapsed_ms'] for r in rows], marker='o', linewidth=2.2, label=attack, color=colors[attack])
     ax.set_xscale('log', base=2)
@@ -135,7 +137,7 @@ def make_charts(attack_summary: list[dict], benchmarks: list[dict]) -> None:
     fig.savefig(RESULTS / 'attack_runtime.png', dpi=180)
     plt.close(fig)
     fig, ax = plt.subplots(figsize=(8.2, 4.6))
-    for operation, color in (('shift_encrypt', '#64748b'), ('vigenere_encrypt', '#f59e0b'), ('vrf_encrypt', '#7c3aed'), ('vrf_decrypt', '#0891b2')):
+    for operation, color in (('shift_encrypt', '#64748b'), ('vigenere_encrypt', '#f59e0b'), ('hill_encrypt', '#16a34a'), ('vhc_encrypt', '#7c3aed'), ('vhc_decrypt', '#0891b2')):
         rows = [row for row in benchmarks if row['operation'] == operation]
         ax.plot([r['input_length'] for r in rows], [r['median_ms'] for r in rows], marker='o', linewidth=2.0, label=operation, color=color)
     ax.set_xscale('log')
@@ -168,10 +170,10 @@ def main() -> None:
     write_csv(RESULTS / 'performance.csv', benchmarks)
     make_charts(summary, benchmarks)
     sample_plain = 'MEETATTHELIBRARYATSIXPM'
-    sample_key = 'CRYPTOGRAPHY'
+    sample_key, sample_hill = KEYS[0]
     stage_one = vigenere_encrypt(sample_plain, sample_key)
-    sample_cipher = rail_fence_encrypt(stage_one, derive_rails(sample_key))
-    metadata = {'seed': args.seed, 'trials_per_configuration': args.trials, 'key_lengths': sorted({len(key) for key in KEYS}), 'rail_search_range': [2, 8], 'maximum_key_length': 20, 'ic_shortlist': 8, 'training_source': 'Pride and Prejudice + Sherlock Holmes', 'evaluation_source': 'A Tale of Two Cities (separate from training)', 'sample': {'plaintext': sample_plain, 'key': sample_key, 'rails': derive_rails(sample_key), 'vigenere_stage': stage_one, 'ciphertext': sample_cipher, 'decrypted': decrypt(sample_cipher, sample_key)}}
+    sample_cipher = encrypt(sample_plain, sample_key, sample_hill)
+    metadata = {'seed': args.seed, 'trials_per_configuration': args.trials, 'key_lengths': sorted({len(key) for key, _ in KEYS}), 'hill_key_length': 4, 'known_prefix_length': KNOWN_PREFIX, 'prefix_lengths': list(PREFIX_LENGTHS), 'maximum_key_length': 20, 'period_shortlist': 4, 'row_shortlist': 6, 'training_source': 'Pride and Prejudice + Sherlock Holmes', 'evaluation_source': 'A Tale of Two Cities (separate from training)', 'sample': {'plaintext': sample_plain, 'key': sample_key, 'hill_key': sample_hill, 'hill_matrix': hill_matrix(sample_hill), 'vigenere_stage': stage_one, 'ciphertext': sample_cipher, 'decrypted': decrypt(sample_cipher, sample_key, sample_hill)}}
     (RESULTS / 'experiment_metadata.json').write_text(json.dumps(metadata, indent=2), encoding='utf-8')
     print(f'Results written to {RESULTS}')
 if __name__ == '__main__':

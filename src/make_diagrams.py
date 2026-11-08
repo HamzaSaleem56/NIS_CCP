@@ -31,7 +31,7 @@ def flow(filename, labels, colors, title, subtitle):
 
 def main():
     OUT.mkdir(exist_ok=True)
-    flow('cipher_architecture.png', ['Plaintext\nA–Z', 'Vigenère\nsubstitution', 'Key-derived\nrail count', 'Rail-Fence\ntransposition', 'Ciphertext'], ['#334155', '#7c3aed', '#f59e0b', '#0891b2', '#172554'], 'VRFC encryption architecture', 'The secret key (10+ letters) drives Stage I and deterministically selects 2–8 rails for Stage II. Decryption reverses this order.')
-    flow('attack_pipeline.png', ['Ciphertext', 'Undo rails\nr = 2…8', 'IC key-length\nshortlist', 'χ² shift\nrecovery', 'Quadgram\nranking'], ['#172554', '#0891b2', '#f59e0b', '#7c3aed', '#15803d'], 'Frequency-only attack pipeline', '56 candidates are evaluated with the configured bounds: 7 rail counts × 8 shortlisted key lengths.')
+    flow('cipher_architecture.png', ['Plaintext\nA–Z', 'Stage I\nVigenère', 'Split into\nletter pairs', 'Stage II\n2×2 Hill', 'Ciphertext'], ['#334155', '#7c3aed', '#f59e0b', '#0891b2', '#172554'], 'VHC encryption architecture', 'Keyword K (10+ letters) drives Stage I; an independent 4-letter Hill key gives an invertible matrix for Stage II. An odd final letter skips Hill. Decryption reverses the order.')
+    flow('attack_pipeline.png', ['Ciphertext\npairs', 'Key length\nL = 10…20', 'IC ranks\nHill rows', 'χ² recovers\nshifts', 'Quadgram\nranking'], ['#172554', '#0891b2', '#f59e0b', '#7c3aed', '#15803d'], 'Frequency-only attack pipeline', 'Each row of the inverse Hill matrix is found on its own (42 row groups, not 157,248 matrices); shifts per class come from chi-squared.')
 if __name__ == '__main__':
     main()
