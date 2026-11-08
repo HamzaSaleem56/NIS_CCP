@@ -4,6 +4,7 @@
 **Assessment:** Complex Computing Problem, CLO3, Fall 2026  
 **Author:** Muhammad Imaad Tahir (CR-23014)  
 **GitHub:** https://github.com/HamzaSaleem56/NIS_CCP (public)
+**Try it online:** https://hamzasaleem56.github.io/NIS_CCP/ (no install needed)
 
 VHC (Vigenère–Hill Cascade) is a two-stage classical cipher built from two ciphers covered in the course (Vigenère and Hill), with a complete Python implementation and two cryptanalysis methods. It is an educational project, not production cryptography.
 
@@ -24,6 +25,22 @@ Hill key:    HILL  ->  [[7, 8], [11, 11]], det 15, inverse [[25, 22], [1, 23]]
 Stage I:     OVCITHZYEAPZTRPNTHYZXET
 Ciphertext:  GVAGHADTCSTYJGBWHAETLLT
 Decrypted:   MEETATTHELIBRARYATSIXPM
+```
+
+## Try it in your browser
+
+The `docs/` folder holds the **VHC cipher lab**, a web page where anyone can test the project without installing anything:
+
+- **Encrypt & decrypt** with any keyword and Hill key, with a step-by-step view of the Vigenère table and the Hill matrix maths for every letter pair.
+- **Break it:** make a secret message from a sample passage with hidden random keys (or paste your own ciphertext), then run the frequency attack and the known-plaintext attack and see what they recover.
+- **Hill keys:** check whether a 4-letter key is valid, see its determinant and inverse matrix, or generate a valid key.
+
+Open it online at https://hamzasaleem56.github.io/NIS_CCP/, or download the repository and open `docs/index.html` in any browser. Everything runs locally in the browser; nothing you type is sent anywhere.
+
+`docs/vhc.js` is a JavaScript port of `src/cipher.py` and `src/attack.py`, and the language data in `docs/quadgrams.js` and `docs/samples.js` is generated from the same corpora with `python3 src/export_web_data.py`. To confirm the web version gives exactly the same ciphertexts, recovered messages and keys as the Python code (requires Node.js):
+
+```bash
+python3 tests/web_parity_check.py
 ```
 
 ## Requirements
@@ -114,6 +131,7 @@ tests/               Automated unit and recovery tests
 data/                Training/evaluation corpora and attribution
 results/             Raw CSVs, aggregate results, metadata, charts
 report/              Final PDF, DOCX, and report source
+docs/                Browser version (VHC cipher lab) for GitHub Pages
 ```
 
 ## Security notice

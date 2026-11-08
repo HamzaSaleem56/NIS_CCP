@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VHC cipher lab — Vigenère + Hill</title>
+  <meta name="description" content="Encrypt, decrypt and break the Vigenère–Hill Cascade (VHC) in your browser. An open-source classical cryptography project for CT-486.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%2317233b%27/%3E%3Crect x=%2717%27 y=%2717%27 width=%279%27 height=%279%27 fill=%27%23ffe45c%27/%3E%3Cpath d=%27M7 6v20M25 6v20%27 stroke=%27%23fff%27 stroke-width=%272.5%27/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to the tool</a>
+  <header class="top">
+    <div class="wrap top-inner">
+      <a class="brand" href="#encrypt" aria-label="VHC cipher lab, home">
+        <span class="brand-mark" aria-hidden="true"><span>V</span><span>H</span><span>C</span><span>✕</span></span>
+        <span class="brand-name">VHC cipher lab</span>
+      </a>
+      <nav class="tabs" role="tablist" aria-label="Sections">
+        <button role="tab" id="tab-encrypt" aria-controls="panel-encrypt" data-tab="encrypt">Encrypt &amp; decrypt</button>
+        <button role="tab" id="tab-break" aria-controls="panel-break" data-tab="break">Break it</button>
+        <button role="tab" id="tab-keys" aria-controls="panel-keys" data-tab="keys">Hill keys</button>
+        <button role="tab" id="tab-about" aria-controls="panel-about" data-tab="about">How it works</button>
+      </nav>
+      <a class="repo-link" href="https://github.com/HamzaSaleem56/NIS_CCP">Source on GitHub</a>
+    </div>
+  </header>
+
+  <main id="main" class="wrap">
+
+    <section class="panel" id="panel-encrypt" role="tabpanel" aria-labelledby="tab-encrypt">
+      <div class="intro">
+        <h1>Lock a message with two classical ciphers.</h1>
+        <p class="lede">A Vigenère keyword shifts every letter, then a 2×2 Hill matrix mixes the letters in pairs. Everything runs in your browser; nothing you type is sent anywhere.</p>
+      </div>
+
+      <div class="sheet tool">
+        <div class="mode" role="radiogroup" aria-label="What do you want to do?">
+          <label><input type="radio" name="mode" value="encrypt" checked> Encrypt</label>
+          <label><input type="radio" name="mode" value="decrypt"> Decrypt</label>
+        </div>
+
+        <label class="field">
+          <span class="field-label" id="msg-label">Message</span>
+          <textarea id="message" rows="4" spellcheck="false" aria-describedby="msg-help">Meet at the library at six pm</textarea>
+          <span class="help" id="msg-help">Letters A–Z only count. Spaces, numbers and punctuation are dropped.</span>
+        </label>
+
+        <div class="key-row">
+          <label class="field">
+            <span class="field-label">Vigenère keyword</span>
+            <input id="keyword" type="text" value="CRYPTOGRAPHY" autocomplete="off" spellcheck="false" aria-describedby="keyword-status">
+            <span class="status" id="keyword-status" aria-live="polite"></span>
+          </label>
+          <label class="field">
+            <span class="field-label">Hill key</span>
+            <input id="hillkey" type="text" value="HILL" maxlength="8" autocomplete="off" spellcheck="false" aria-describedby="hill-status">
+            <span class="status" id="hill-status" aria-live="polite"></span>
+          </label>
+        </div>
+
+        <div class="actions">
+          <button class="primary" id="run-cipher">Encrypt message</button>
+          <button class="quiet" id="random-keys">Use random keys</button>
+          <button class="quiet" id="load-example">Load the report example</button>
+        </div>
+
+        <div class="error" id="cipher-error" role="alert" hidden></div>
+
+        <div class="result" id="cipher-result" hidden>
+          <div class="result-head">
+            <span class="field-label" id="result-label">Ciphertext</span>
+            <button class="quiet small" id="copy-result">Copy</button>
+            <button class="quiet small" id="send-to-break">Try to break this</button>
+          </div>
+          <output class="mono big-text" id="result-text" aria-labelledby="result-label"></output>
+        </div>
+      </div>
+
+      <div class="steps" id="steps" hidden>
+        <h2>What happened, step by step</h2>
+        <ol class="step-list">
+          <li>
+            <h3>Clean the text</h3>
+            <p>Only the letters A–Z are kept, in capitals.</p>
+            <div class="mono strip" id="step-clean"></div>
+          </li>
+          <li>
+            <h3 id="step-vig-title">Stage I: Vigenère</h3>
+            <p id="step-vig-help">Each letter moves forward by the matching keyword letter (A = 0, B = 1, …). The keyword repeats.</p>
+            <div class="tableau" id="step-vig"></div>
+          </li>
+          <li>
+            <h3 id="step-hill-title">Stage II: Hill, two letters at a time</h3>
+            <p id="step-hill-help">Each pair becomes a column of two numbers and is multiplied by the key matrix, mod 26. Pick a pair to see the maths.</p>
+            <div class="pairs mono" id="step-pairs" role="listbox" aria-label="Letter pairs"></div>
+            <div class="calc" id="step-calc"></div>
+          </li>
+          <li>
+            <h3>Result</h3>
+            <div class="mono strip" id="step-result"></div>
+            <p class="note" id="step-odd" hidden>The message has an odd number of letters, so the last one skips the Hill stage and keeps only its Vigenère shift.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-break" role="tabpanel" aria-labelledby="tab-break" hidden>
+      <div class="intro">
+        <h1>Now play the attacker.</h1>
+        <p class="lede">Make a secret message with random keys, then see whether letter statistics or a few known letters are enough to recover it. Longer messages give the attacker more to work with.</p>
+      </div>
+
+      <div class="sheet">
+        <h2 class="sheet-title">The secret message</h2>
+        <div class="maker">
+          <label class="field">
+            <span class="field-label">English passage (A Tale of Two Cities)</span>
+            <select id="sample-pick"></select>
+          </label>
+          <label class="field">
+            <span class="field-label">Length</span>
+            <select id="sample-length">
+              <option value="100">100 letters</option>
+              <option value="200">200 letters</option>
+              <option value="400">400 letters</option>
+              <option value="800" selected>800 letters</option>
+              <option value="1600">1,600 letters</option>
+              <option value="3200">3,200 letters</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field-label">Keys</span>
+            <select id="sample-keys">
+              <option value="random" selected>Random keys (hidden)</option>
+              <option value="tool">The keys from the Encrypt tab</option>
+            </select>
+          </label>
+          <button class="primary" id="make-secret">Make a secret message</button>
+        </div>
+
+        <label class="field">
+          <span class="field-label">Ciphertext to attack</span>
+          <textarea id="attack-ct" rows="5" spellcheck="false" placeholder="Make a secret message above, or paste any VHC ciphertext here."></textarea>
+          <span class="help" id="attack-ct-help">The attacker only sees this text. You can also paste your own ciphertext.</span>
+        </label>
+        <details class="truth" id="truth" hidden>
+          <summary>Show the real message and keys</summary>
+          <dl class="kv">
+            <dt>Keyword</dt><dd class="mono" id="truth-key"></dd>
+            <dt>Hill key</dt><dd class="mono" id="truth-hill"></dd>
+            <dt>Message</dt><dd class="mono wrap-text" id="truth-text"></dd>
+          </dl>
+        </details>
+      </div>
+
+      <div class="attacks">
+        <div class="sheet attack">
+          <h2 class="sheet-title">Frequency attack</h2>
+          <p>Uses only the ciphertext. It finds each row of the inverse Hill matrix by how English-like the letters look, then each Vigenère shift by comparing letter counts with normal English.</p>
+          <button class="primary" id="run-freq">Run frequency attack</button>
+          <div class="attack-out" id="freq-out" aria-live="polite"></div>
+        </div>
+        <div class="sheet attack">
+          <h2 class="sheet-title">Known-plaintext attack</h2>
+          <p>The attacker also knows how the message starts. Subtracting pairs cancels the keyword, and a little matrix algebra gives both keys. Odd-length keywords need more known letters than even ones.</p>
+          <div id="known-auto">
+            <label class="field">
+              <span class="field-label">Letters the attacker knows: <strong id="known-count">40</strong></span>
+              <input type="range" id="known-slider" min="8" max="96" step="2" value="40">
+            </label>
+          </div>
+          <label class="field" id="known-manual" hidden>
+            <span class="field-label">Known start of the message</span>
+            <input type="text" id="known-text" autocomplete="off" spellcheck="false" placeholder="e.g. MEETATTHELIBRARY…">
+          </label>
+          <button class="primary" id="run-known">Run known-plaintext attack</button>
+          <div class="attack-out" id="known-out" aria-live="polite"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-keys" role="tabpanel" aria-labelledby="tab-keys" hidden>
+      <div class="intro">
+        <h1>Not every 4 letters make a Hill key.</h1>
+        <p class="lede">The matrix has to be undone during decryption, which only works when its determinant is odd and not 13. Check a key, or pick one that works.</p>
+      </div>
+      <div class="keys-grid">
+        <div class="sheet">
+          <label class="field">
+            <span class="field-label">Hill key to check</span>
+            <input type="text" id="check-key" value="HILL" maxlength="8" autocomplete="off" spellcheck="false">
+          </label>
+          <div class="actions">
+            <button class="quiet" id="gen-key">Make a random valid key</button>
+            <button class="quiet" id="use-checked">Use this key</button>
+          </div>
+          <div id="key-report" aria-live="polite"></div>
+        </div>
+        <div class="sheet">
+          <h2 class="sheet-title">Words that work</h2>
+          <p>Click one to use it as your Hill key.</p>
+          <div class="chips" id="word-keys"></div>
+          <h2 class="sheet-title">Words that don't</h2>
+          <div class="chips bad" id="bad-keys"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel prose" id="panel-about" role="tabpanel" aria-labelledby="tab-about" hidden>
+      <div class="intro">
+        <h1>How VHC works, in one page.</h1>
+      </div>
+      <div class="sheet">
+        <h2>The design</h2>
+        <p>VHC (Vigenère–Hill Cascade) chains two ciphers taught in the course. <strong>Stage I</strong> is a Vigenère cipher with a keyword of at least 10 letters. <strong>Stage II</strong> is a 2×2 Hill cipher with its own 4-letter key. Decryption runs the same stages backwards with the inverse matrix. If a message has an odd number of letters, the last letter skips the Hill stage, so nothing is padded and decryption is always exact.</p>
+        <h2>Why it can be broken</h2>
+        <p>Both stages are linear, so together they act like one Hill cipher plus an offset that repeats every L/2 pairs (or every L pairs when the keyword length L is odd). Two consequences:</p>
+        <ul>
+          <li>Each row of the inverse matrix can be found on its own, so the attacker checks 42 groups of rows instead of 157,248 matrices.</li>
+          <li>Two known pairs in the same key position have the same offset, so subtracting them removes the keyword completely.</li>
+        </ul>
+        <p>In the project's experiment (20 trials per length), the frequency attack recovered every message of 800 letters or more, and 32 known letters were enough to recover every message.</p>
+        <h2>Run it yourself</h2>
+        <p>The Python version, tests, experiment data and full report are in the repository.</p>
+        <pre class="code"><code>git clone https://github.com/HamzaSaleem56/NIS_CCP.git
+cd NIS_CCP
+python3 src/cipher.py encrypt --key CRYPTOGRAPHY --hill-key HILL --text "Meet at the library at six pm"
+python3 -m unittest discover -s tests -v</code></pre>
+        <p><a href="https://github.com/HamzaSaleem56/NIS_CCP">Open the repository</a> or <a href="https://github.com/HamzaSaleem56/NIS_CCP/blob/main/report/CCP_NIS_Fall_2026_Report.pdf">read the full report (PDF)</a>.</p>
+        <p class="note">VHC is a teaching cipher. Don't use it to protect real secrets.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="wrap foot">
+    <p>Built for Network and Information Security (CT-486), Complex Computing Problem, Fall 2026. Open source, and it runs entirely in your browser.</p>
+  </footer>
+
+  <script src="quadgrams.js" defer></script>
+  <script src="samples.js" defer></script>
+  <script src="vhc.js" defer></script>
+  <script src="app.js" defer></script>
+</body>
+</html>
