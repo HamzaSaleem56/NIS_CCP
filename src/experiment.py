@@ -107,7 +107,8 @@ def make_charts(attack_summary: list[dict], benchmarks: list[dict]) -> None:
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
     plt.style.use('seaborn-v0_8-whitegrid')
-    colors = {'frequency': '#7c3aed', f'known-prefix-{KNOWN_PREFIX}': '#0891b2'}
+    plt.rcParams.update({'font.family': 'serif', 'font.serif': ['FreeSerif', 'Liberation Serif', 'DejaVu Serif'], 'font.size': 11, 'mathtext.fontset': 'stix'})
+    colors = {'frequency': '#1f3a5f', f'known-prefix-{KNOWN_PREFIX}': '#8c3b3b'}
     fig, ax = plt.subplots(figsize=(8.2, 4.6))
     for attack in ('frequency', f'known-prefix-{KNOWN_PREFIX}'):
         rows = [row for row in attack_summary if row['attack'] == attack]
@@ -137,7 +138,7 @@ def make_charts(attack_summary: list[dict], benchmarks: list[dict]) -> None:
     fig.savefig(RESULTS / 'attack_runtime.png', dpi=180)
     plt.close(fig)
     fig, ax = plt.subplots(figsize=(8.2, 4.6))
-    for operation, color in (('shift_encrypt', '#64748b'), ('vigenere_encrypt', '#f59e0b'), ('hill_encrypt', '#16a34a'), ('vhc_encrypt', '#7c3aed'), ('vhc_decrypt', '#0891b2')):
+    for operation, color in (('shift_encrypt', '#7a7a7a'), ('vigenere_encrypt', '#4f7cac'), ('hill_encrypt', '#4d7c59'), ('vhc_encrypt', '#1f3a5f'), ('vhc_decrypt', '#8c3b3b')):
         rows = [row for row in benchmarks if row['operation'] == operation]
         ax.plot([r['input_length'] for r in rows], [r['median_ms'] for r in rows], marker='o', linewidth=2.0, label=operation, color=color)
     ax.set_xscale('log')
@@ -154,7 +155,18 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('--trials', type=int, default=20)
     parser.add_argument('--seed', type=int, default=20261108)
+    parser.add_argument('--charts-only', action='store_true', help='Redraw charts from the saved CSV results without rerunning')
     args = parser.parse_args()
+    if args.charts_only:
+        def numeric(rows):
+            return [{k: (float(v) if k not in ('attack', 'operation') else v) for k, v in row.items()} for row in rows]
+        with (RESULTS / 'attack_summary.csv').open(encoding='utf-8') as handle:
+            summary_rows = numeric(list(csv.DictReader(handle)))
+        with (RESULTS / 'performance.csv').open(encoding='utf-8') as handle:
+            benchmark_rows = numeric(list(csv.DictReader(handle)))
+        make_charts(summary_rows, benchmark_rows)
+        print(f'Charts redrawn in {RESULTS}')
+        return
     if args.trials < 1:
         parser.error('--trials must be positive')
     RESULTS.mkdir(exist_ok=True)

@@ -163,8 +163,10 @@ The solution is implemented in Python 3 with no third-party runtime dependency f
 Representative commands are:
 
 ```bash
-python3 src/cipher.py encrypt --key CRYPTOGRAPHY --hill-key HILL --text "MEET AT THE LIBRARY AT SIX PM"
-python3 src/cipher.py decrypt --key CRYPTOGRAPHY --hill-key HILL --text GVAGHADTCSTYJGBWHAETLLT
+python3 src/cipher.py encrypt --key CRYPTOGRAPHY --hill-key HILL \
+    --text "MEET AT THE LIBRARY AT SIX PM"
+python3 src/cipher.py decrypt --key CRYPTOGRAPHY --hill-key HILL \
+    --text GVAGHADTCSTYJGBWHAETLLT
 python3 src/cipher.py matrix --hill-key HILL
 python3 src/attack.py frequency --cipher-file ciphertext.txt
 python3 src/attack.py known --known-file known_prefix.txt --cipher-file ciphertext.txt
@@ -364,40 +366,3 @@ The analysis showed that the two linear stages combine into a Hill cipher with a
 [7] A. C. Doyle, *The Adventures of Sherlock Holmes*. Project Gutenberg eBook 1661. https://www.gutenberg.org/ebooks/1661 (training corpus; accessed 2 November 2026).
 
 [8] C. Dickens, *A Tale of Two Cities*. Project Gutenberg eBook 98. https://www.gutenberg.org/ebooks/98 (separate evaluation corpus; accessed 2 November 2026).
-
-# Appendix A — Requirement compliance matrix
-
-| CCP requirement or deliverable | Delivered evidence |
-|---|---|
-| Combine two or more classical ciphers studied in class | Vigenère (Lecture 3) + Hill (Lecture 7); Sections 1–2 |
-| At least two encryption stages, each a different technique | Stage I Vigenère substitution, Stage II 2×2 Hill cipher; Sections 2.2–2.4 |
-| Key length of at least 10 characters | Validation rejects keywords under 10 letters; experiments use 10–12 letter keywords plus a 4-letter Hill key |
-| Program that encrypts and decrypts | `src/cipher.py` with CLI; pseudocode in Section 3; tests in `tests/test_cipher.py` |
-| Handles different input lengths, A–Z | Normalization, odd-length handling, round trips for lengths 0–1,001 |
-| Frequency-analysis attack compared with English | `src/attack.py`: IC row ranking, chi-squared against English frequencies, quadgram ranking; Section 6.2 |
-| Known-plaintext attack recovering the full message | Same-class differences, Hill matrix solve, Vigenère shift recovery; Section 6.3 |
-| Time complexity of encryption and decryption | Section 10.1 table |
-| Efficiency compared with a single-stage Shift cipher | Section 10.2 measurements at four input sizes and Figure 5 |
-| Algorithms for encryption and decryption | Sections 3.1 and 3.2 |
-| Explanation of how the techniques were combined | Sections 2.3–2.4 and the worked example in Section 4 |
-| Attack program; success rate and effort for various lengths | Six lengths, 20 trials each, Wilson intervals, timings and candidate counts; Section 8 |
-| Security analysis | Section 9 |
-| Description of attack methods and results | Sections 6 and 8 |
-| Suggestions for improving security without much complexity | Section 11 |
-| Performance metrics of encryption, decryption, and attacks | Sections 8 and 10.2 |
-| Code uploaded to GitHub | Public repository at https://github.com/HamzaSaleem56/NIS_CCP; source, tests, data attribution, raw results, README |
-
-# Appendix B — Verification and reproducibility
-
-The automated suite completed **9/9 tests successfully**. It includes the standard Vigenère `ATTACKATDAWN`/`LEMON` vector, the textbook Hill `SHORTEXAMPLE`/`HILL` vector and its inverse matrix, Hill round trips for lengths 0–79 under four keys, custom-cipher round trips for multiple key pairs and boundary lengths, key validation (short keywords and non-invertible Hill keys), Shift baseline behavior, and end-to-end known-prefix plus frequency-only recoveries.
-
-To reproduce the report's measurements from the project root:
-
-```bash
-python3 -m unittest discover -s tests -v
-python3 src/experiment.py --trials 20 --seed 20261108
-python3 src/make_diagrams.py
-python3 src/build_report.py
-```
-
-The raw per-trial rows are supplied in `results/frequency_attack_raw.csv`, `results/known_plaintext_raw.csv`, and `results/known_prefix_lengths.csv`. Aggregate values are in `results/attack_summary.csv`; benchmark samples are summarized in `results/performance.csv`. `results/experiment_metadata.json` records the seed, bounds, and worked example. This separation allows every reported percentage to be audited rather than trusted as a handwritten claim.

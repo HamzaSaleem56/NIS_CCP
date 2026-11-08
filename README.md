@@ -2,7 +2,8 @@
 
 **Course:** Network and Information Security (CT-486)  
 **Assessment:** Complex Computing Problem, CLO3, Fall 2026  
-**Author:** Muhammad Imaad Tahir (CR-23014)  
+**Group members:** Hamza Saleem (CR-23009), M Imaad Tahir (CR-23014), Mesum Raza (CR-23032), Waleed Kashif (CR-23040), Owais Khan (CR-23301)  
+**Submitted to:** Prof. Dr. Shariq Mahmood Khan, Department of CS & IT, NED University of Engineering & Technology  
 **GitHub:** https://github.com/HamzaSaleem56/NIS_CCP (public)
 **Try it online:** https://hamzasaleem56.github.io/NIS_CCP/ (no install needed)
 
@@ -47,7 +48,7 @@ python3 tests/web_parity_check.py
 
 - Python 3.10 or newer for the cipher, attacks, tests, and experiments.
 - No third-party package is required for the core cipher or attacks.
-- Report/chart regeneration uses `requirements-report.txt` and Linux DejaVu fonts.
+- Report/chart regeneration uses `requirements-report.txt`, the GNU FreeFont Times-style serif (`fonts-freefont-ttf`) and DejaVu Sans Mono.
 
 ## Encrypt and decrypt
 
@@ -112,7 +113,6 @@ These are measured outcomes for the included corpus, keys, and attack bounds—n
 ## Final report
 
 - `report/CCP_NIS_Fall_2026_Report.pdf` — submission report
-- `report/CCP_NIS_Fall_2026_Report.docx` — editable version
 - `report/Report.md` — source with dynamic result-table placeholders
 
 To regenerate after installing report dependencies:
@@ -120,8 +120,11 @@ To regenerate after installing report dependencies:
 ```bash
 python3 -m pip install -r requirements-report.txt
 python3 src/make_diagrams.py
+python3 src/experiment.py --charts-only
 python3 src/build_report.py
 ```
+
+The builder also writes an editable Word copy (`report/CCP_NIS_Fall_2026_Report.docx`) for local use; it is not kept in the repository.
 
 ## Project structure
 
@@ -130,7 +133,7 @@ src/                 Cipher, attacks, experiments, diagrams, report builder
 tests/               Automated unit and recovery tests
 data/                Training/evaluation corpora and attribution
 results/             Raw CSVs, aggregate results, metadata, charts
-report/              Final PDF, DOCX, and report source
+report/              Final PDF, report source, and cover logo
 docs/                Browser version (VHC cipher lab) for GitHub Pages
 ```
 
