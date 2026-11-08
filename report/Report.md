@@ -137,7 +137,7 @@ Concatenating the rows produces `OT` + `VZR` + `CPPT` + `IANE` + `TETX` + `HYHZ`
 
 # 5. Reference implementation
 
-**Source repository:** https://github.com/Global-Tech-hub/ccp-nis-fall-2026-vrfc (private; instructor and group members require collaborator access).
+**Source repository:** https://github.com/HamzaSaleem56/NIS_CCP (public).
 
 The solution is implemented in Python 3 with no third-party runtime dependency for encryption, decryption, or cryptanalysis. Matplotlib is used only to regenerate report charts.
 
@@ -355,7 +355,7 @@ The frequency attack became reliable as more ciphertext supplied statistical evi
 | Encryption/decryption complexity | Section 10 asymptotic table |
 | Shift-cipher comparison | Measured baselines at four input sizes and Figure 5 |
 | Security improvements | Section 11 with cost and residual-risk analysis |
-| GitHub repository | Private repository published at https://github.com/Global-Tech-hub/ccp-nis-fall-2026-vrfc; organized source, tests, data attribution, raw results, README |
+| GitHub repository | Public repository at https://github.com/HamzaSaleem56/NIS_CCP; organized source, tests, data attribution, raw results, README |
 
 # Appendix B — Verification and reproducibility
 

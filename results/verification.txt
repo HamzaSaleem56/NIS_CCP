@@ -17,5 +17,4 @@ Worked example encryption/decryption: exact match
 Source policy: zero comment tokens and zero docstrings in all Python files
 PDF: 16 A4 pages; repository URL and dynamic benchmark values verified
 DOCX: valid package, 13 tables, 5 figures
-Required submission and group-sharing files: present
-{"defaultBranchRef":{"name":"main"},"nameWithOwner":"Global-Tech-hub/ccp-nis-fall-2026-vrfc","url":"https://github.com/Global-Tech-hub/ccp-nis-fall-2026-vrfc","visibility":"PRIVATE"}
+{"defaultBranchRef":{"name":"main"},"nameWithOwner":"HamzaSaleem56/NIS_CCP","url":"https://github.com/HamzaSaleem56/NIS_CCP","visibility":"PUBLIC"}

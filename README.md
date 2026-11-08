@@ -3,7 +3,7 @@
 **Course:** Network and Information Security (CT-486)  
 **Assessment:** Complex Computing Problem, CLO3, Fall 2026  
 **Author:** Muhammad Imaad Tahir (CR-23014)  
-**GitHub:** https://github.com/Global-Tech-hub/ccp-nis-fall-2026-vrfc (private; collaborator access required)
+**GitHub:** https://github.com/HamzaSaleem56/NIS_CCP (public)
 
 VRFC (Vigenère–Rail-Fence Cascade) is a two-stage classical cipher with a complete Python implementation and two cryptanalysis methods. It is an educational project, not production cryptography.
 
@@ -112,8 +112,6 @@ tests/               Automated unit and recovery tests
 data/                Training/evaluation corpora and attribution
 results/             Raw CSVs, aggregate results, metadata, charts
 report/              Final PDF, DOCX, and report source
-PLAN.md              Requirement-to-deliverable plan
-GITHUB_UPLOAD.md     Optional repository-publication steps
 ```
 
 ## Security notice
