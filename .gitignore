@@ -1,0 +1,9 @@
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+results/rendered/
+results/report_contact_sheet.png
+results/report_text.txt
+report/Report_Expanded.md
+~$*.docx
