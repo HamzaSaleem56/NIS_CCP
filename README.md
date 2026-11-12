@@ -2,7 +2,7 @@
 
 **Course:** Network and Information Security (CT-486)  
 **Assessment:** Complex Computing Problem, CLO3, Fall 2026  
-**Group members:** Hamza Saleem (CR-23009), M Imaad Tahir (CR-23014), Mesum Raza (CR-23032), Waleed Kashif (CR-23040), M Owais Azhar (CR-23301)  
+**Group members:** Hamza Saleem (CR-23009), M Imaad Tahir (CR-23014), Mesum Raza (CR-23032), Waleed Kashif (CR-23040), M. Owais Azhar (CR-23301)  
 **Submitted to:** Prof. Dr. Shariq Mahmood Khan, Department of CS & IT, NED University of Engineering & Technology  
 **GitHub:** https://github.com/HamzaSaleem56/NIS_CCP (public)  
 **Try it online:** https://hamzasaleem56.github.io/NIS_CCP/ (no install needed)  
